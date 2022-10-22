@@ -7,8 +7,6 @@ import fluentFfmpeg from 'fluent-ffmpeg';
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
-const url = 'https://www.youtube.com/watch?v=TWAPqCbPfiU'; // Url goes here.
-
 // Merges video and audio streams.
 function mergeAudioAndVideo(video: Readable, audio: Readable, name: string) {
     let ffmpegProcess = cp.spawn(ffmpeg as string, [
@@ -36,6 +34,13 @@ function mergeAudioAndVideo(video: Readable, audio: Readable, name: string) {
 
     // Change the format to mp4 and save the file.
     fluentFfmpeg({ source: ffmpegProcess.stdio[5 as any] as Readable }).toFormat('mp4').save(`./downloads/${name}.mp4`);
+}
+
+
+async function getMetadata(url: string) {
+    const info = await ytdl.getInfo(url);
+
+    return info;
 }
 
 async function downloadVideo(url: string) {
@@ -74,4 +79,9 @@ function progressBar(progress: number) {
     return progressBar;
 }
 
-downloadVideo(url);
+downloadVideo('https://www.youtube.com/watch?v=5EanBEvswVg');
+
+export {
+    getMetadata,
+    downloadVideo,
+}

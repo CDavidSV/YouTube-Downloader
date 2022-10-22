@@ -1,6 +1,8 @@
 const form = document.getElementById('search-form');
 const linkInput = document.getElementById('link');
 const errorMsg = document.getElementById('error');
+const result = document.getElementById('video-result');
+const loader = document.getElementById('loader-div');
 
 let link = '';
 
@@ -8,7 +10,7 @@ linkInput.addEventListener('input', (event) => {
     link = event.target.value;
 });
 
-form.addEventListener('submit', (event) => {
+form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     // Verify that a link has been entered.
@@ -26,8 +28,23 @@ form.addEventListener('submit', (event) => {
         return;
     }
 
-    console.log(link);
+    // Send data to the server.
+    const baseUrl = 'http://localhost:3000/search';
+    await fetch(baseUrl,
+        {
+            method: 'POST',
+            headers: {
+                "content-Type": 'application/json'
+            },
+            body: JSON.stringify({
+                parcel: link
+            })
+        });
+
+    // Modify styles.
+    loader.style.transform = 'scale(1)';
     errorMsg.textContent = "";
     linkInput.style.border = "none white";
+    result.style.opacity = '100%';
 
 }); 

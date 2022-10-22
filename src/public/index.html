@@ -10,13 +10,18 @@
 <body>
     <div class="box">
         <h1>Youtube Video Downloader</h1>
-        <form id="search-form" action="">
+        <form id="search-form" method="get" action="/">
             <input id="link" type="text" name="" placeholder="Youtube link goes here...">
             <input id="submit-button" type="submit" name="" value="Download">
             <p id="error"></p>
         </form>
-        <div class="video-container">
-            <p>Video</p>
+        <div id="loader-div">
+            <div class="loader"></div>
+        </div>
+        <div id="video-result" class="video-container">
+            <img class="thumbnail" src="" alt="">
+            <a class="title" href="">Video Title</a>
+            <p class="duration">00:00:00</p>
         </div>
     </div>
 
