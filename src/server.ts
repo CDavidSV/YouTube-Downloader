@@ -29,8 +29,24 @@ import open from 'open';
             }
         });
 
-        const obj = Object.assign({}, videoResolutions);
-        res.status(200).json(obj);
+        const videoObj: {
+            title: string, 
+            author: string, 
+            authorURL: string, 
+            duration: string, 
+            thumbnail: string,
+            container: any, 
+            videoURL: string
+        } = {
+            title: metadata.videoDetails.title,
+            author: metadata.videoDetails.author.name,
+            authorURL: metadata.videoDetails.author.channel_url,
+            duration: metadata.timestamp,
+            thumbnail: metadata.videoDetails.thumbnails[0].url,
+            container: Object.assign({}, videoResolutions),
+            videoURL: parcel
+        };
+        res.status(200).json(videoObj);
     });
 
     app.listen(port, () => {

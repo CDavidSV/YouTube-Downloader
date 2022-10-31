@@ -28,9 +28,13 @@ form.addEventListener('submit', async (event) => {
         return;
     }
 
+    // Modify styles.
+    loader.style.transform = 'scale(1)';
+    errorMsg.textContent = "";
+
     // Send data to the server.
     const baseUrl = 'http://localhost:3000/search';
-    await fetch(baseUrl,
+    const videoObj = await fetch(baseUrl,
         {
             method: 'POST',
             headers: {
@@ -39,12 +43,14 @@ form.addEventListener('submit', async (event) => {
             body: JSON.stringify({
                 parcel: link
             })
+        }).then((response) => response.json())
+        .then((responseJSON) => {
+           return responseJSON;
         });
 
-    // Modify styles.
-    loader.style.transform = 'scale(1)';
-    errorMsg.textContent = "";
-    linkInput.style.border = "none white";
-    result.style.opacity = '100%';
-
+        linkInput.style.border = "none white";
+        result.style.opacity = '100%';
+        loader.style.opacity = '0%';
+    
+        console.log(videoObj);
 }); 
