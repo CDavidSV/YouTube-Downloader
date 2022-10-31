@@ -1,6 +1,6 @@
-import path, { format } from 'path';
+import path from 'path';
 import express from 'express';
-import { getMetadata, downloadVideo } from './download';
+import { getMetadata } from './download';
 import open from 'open';
 
 (function () {
@@ -23,14 +23,14 @@ import open from 'open';
         const metadata = await getMetadata(parcel);
 
         let videoResolutions: { resolution: string, format: string }[] = [];
-        metadata.formats.forEach(format => {
-            if (format.qualityLabel !== null && !videoResolutions.includes({ resolution: format.qualityLabel, format: format.container })) {
-                videoResolutions.push({ resolution: format.qualityLabel, format: format.container });
+        metadata.formats.forEach(elem => {
+            if (elem.qualityLabel !== null && !videoResolutions.some(i => {return i.resolution === elem.qualityLabel && i.format === elem.container})) {
+                videoResolutions.push({ resolution: elem.qualityLabel, format: elem.container });
             }
         });
-        res.status(200).json(JSON.stringify(videoResolutions));
 
-        console.log(videoResolutions);
+        const obj = Object.assign({}, videoResolutions);
+        res.status(200).json(obj);
     });
 
     app.listen(port, () => {

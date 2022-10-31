@@ -79,8 +79,6 @@ function progressBar(progress: number) {
     return progressBar;
 }
 
-downloadVideo('https://www.youtube.com/watch?v=5EanBEvswVg');
-
 export {
     getMetadata,
     downloadVideo,
