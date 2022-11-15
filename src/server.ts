@@ -22,26 +22,30 @@ import open from 'open';
         }
         const metadata = await getMetadata(parcel);
 
+        if (!metadata) {
+            return res.status(200).send({ status: 'failed' });
+        };
+
         let videoResolutions: { resolution: string, format: string }[] = [];
         metadata.formats.forEach(elem => {
-            if (elem.qualityLabel !== null && !videoResolutions.some(i => {return i.resolution === elem.qualityLabel && i.format === elem.container})) {
+            if (elem.qualityLabel !== null && !videoResolutions.some(i => { return i.resolution === elem.qualityLabel && i.format === elem.container })) {
                 videoResolutions.push({ resolution: elem.qualityLabel, format: elem.container });
             }
         });
 
         const videoObj: {
-            title: string, 
-            author: string, 
-            authorURL: string, 
-            duration: string, 
+            title: string,
+            author: string,
+            authorURL: string,
+            duration: string,
             thumbnail: string,
-            container: any, 
+            container: any,
             videoURL: string
         } = {
             title: metadata.videoDetails.title,
             author: metadata.videoDetails.author.name,
             authorURL: metadata.videoDetails.author.channel_url,
-            duration: metadata.timestamp,
+            duration: metadata.videoDetails.lengthSeconds,
             thumbnail: metadata.videoDetails.thumbnails[0].url,
             container: Object.assign({}, videoResolutions),
             videoURL: parcel

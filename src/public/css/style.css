@@ -25,7 +25,7 @@ input {
     display: inline-block;
     font-size: 20px;
     box-sizing: border-box;
-    transition: 0.5s;
+    transition: 0.25s;
 }
 
 input[type="text"] {
@@ -77,10 +77,23 @@ input[type="submit"]:hover {
     background-color: aliceblue;
     border-radius: 25px;
     width: 650px;
-    height: 160px;
+    height: 132px;
     opacity: 100%;
     opacity: 0%;
-    transition: 1s;
+    transition: 0.5s;
+}
+
+.video-data {
+    margin-top: 10px;
+    display: inline-block;
+    position: relative;
+    margin-left: 190px;
+    inline-size: 460px;
+}
+
+.data-container {
+    position: absolute;
+    margin: 15px auto;
 }
 
 .loader {
@@ -98,11 +111,82 @@ input[type="submit"]:hover {
 .title {
     display: block;
     position: relative;
+    text-decoration: none;
 }
 
 .author {
+    margin-top: 2px;
+    margin-bottom: 5px;
+    color: #555555;
     display: block;
     position: relative;
+    text-decoration: none;
+}
+
+.thumbnail {
+    display: inline-block;
+    position: inherit;
+    margin-left: 15px;
+    border-radius: 15px;
+}
+
+.duration {
+    display: block;
+    position: relative;
+    color: #555555;
+    margin-top: 10px;
+}
+
+.dropbtn {
+    position: absolute;
+    background-color: #04AA6D;
+    color: white;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 10px;
+    border-color: transparent;
+    margin-top: -62px;
+    margin-left: 324px;
+}
+
+.dropbtn:active {
+    border-style: outset;
+}
+
+.dropdown {
+    display: inline-block;
+    user-select: none;
+    border-radius: 20px;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f1f1f1;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    margin-left: 324px;
+    margin-top: -20px;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dropdown:hover .dropbtn {
+    background-color: #3e8e41;
 }
 
 @keyframes spin {

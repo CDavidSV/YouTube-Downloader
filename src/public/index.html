@@ -12,19 +12,29 @@
         <h1>Youtube Video Downloader</h1>
         <form id="search-form" method="get" action="/">
             <input id="link" type="text" name="" placeholder="Youtube link goes here...">
-            <input id="submit-button" type="submit" name="" value="Download">
+            <input id="submit-button" type="submit" name="" value="Search">
             <p id="error"></p>
         </form>
         <div id="loader-div">
             <div class="loader"></div>
         </div>
         <div id="video-result" class="video-container">
-            <img class="thumbnail" src="" alt="">
-            <a class="title" href="">Video Title</a>
-            <p class="duration">00:00:00</p>
-        </div>
+            <div class="data-container">
+                <img id="thumbnail" class="thumbnail" src="" alt="">
+                <div id="video-data" class="video-data">
+                    <a id="title" class="title" href="">Video Title</a>
+                    <a id="author" class="author" href="">Author</a>
+                    <p id="duration" class="duration">00:00:00</p>
+                    <div class="dropdown">
+                        <button class="dropbtn">Download</button>
+                        <div id="dropdown" class="dropdown-content">
+                        <a>Audio Only - mp3</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div> 
     </div>
-
     <script src="./js/main.js"></script>
 </body>
 </html>
