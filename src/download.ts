@@ -1,13 +1,12 @@
 import cp from 'child_process';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'ffmpeg-static';
-import { Readable, Writable } from 'stream';
-import fluentFfmpeg from 'fluent-ffmpeg';
+import { Readable, Stream, Writable } from 'stream';
+import fluentFfmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
 
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
-type ResolutionOptions = "2160p" | "1440p" | "1080p" | "720p" | "480p" | "360p" | "240p" | "144p";
 type FormatOptions = "mp4" | "webm";
 
 // Merges video and audio streams.
@@ -45,53 +44,36 @@ async function getMetadata(url: string) {
     return info;
 }
 
-async function downloadVideo(url: string, name: string, options: { resolution: ResolutionOptions, format: FormatOptions }) {
-    // Get video info.
-    let downloadProgress: number;
-
-    switch (options.resolution) {
-
-    }
-
-    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
-    const videoStream = ytdl(url, { quality: 'highestvideo' }).on('progress', (length, downloaded, totallength) => {
-        // Calculate download progress.
-        const downloadedProgress = Math.round(downloaded * 100 / totallength);
-        if (downloadProgress !== downloadedProgress) {
-            downloadProgress = downloadedProgress;
-            console.clear();
-            const completion = progressBar(downloadProgress);
-            console.log(completion);
-        }
+function downloadVideo(url: string, itag: number) {
+    const videoStream = ytdl(url, { quality: itag, dlChunkSize: 0, highWaterMark: 1 << 25 }).on('error', (err) => {
+        console.log(err);
+        return;
     });
 
-    const mergedVideo = mergeAudioAndVideo(videoStream, audioStream);
+    let final: Readable = videoStream;
 
-    // Convert to valid format.
-    if (options.format === 'mp4') {
-        fluentFfmpeg({ source: mergedVideo }).toFormat('mp4').save(`./downloads/${name}.mp4`);
-    } else {
-        fluentFfmpeg({ source: mergedVideo }).toFormat('webm').save(`./downloads/${name}.mp4`);
+    // Video and audio itags.
+    const DASHaudio = [140, 251, 250, 249, 22, 139, 141, 249, 250, 251, 256, 258, 327, 338];
+    if (!DASHaudio.includes(itag)) {
+        const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+        const mergedVideo = mergeAudioAndVideo(videoStream, audioStream);
+        final = mergedVideo;
     }
+
+    //const convertedStream = fluentFfmpeg({ source: final })
+    //.toFormat('mp4');
+    //.save(`./downloads/lil.mp4`);
+    return final;
 }
 
-function progressBar(progress: number) {
-    let progressBar: string = 'Downloading Video: \n [';
+function downloadAudioOnly(url: string) {
+    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
 
-    const total = 60;
-    for (let i = 0; i < total; i++) {
-        if (i < progress * total / 100) {
-            progressBar += '▮';
-        } else {
-            progressBar += ' ';
-        }
-    }
-    progressBar += ` ] ${progress}%`;
-
-    return progressBar;
+    return audioStream;
 }
 
 export {
     getMetadata,
     downloadVideo,
+    downloadAudioOnly
 }

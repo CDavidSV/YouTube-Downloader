@@ -25,16 +25,22 @@
                     <a id="title" class="title" href="">Video Title</a>
                     <a id="author" class="author" href="">Author</a>
                     <p id="duration" class="duration">00:00:00</p>
-                    <div class="dropdown">
-                        <button class="dropbtn">Download</button>
-                        <div id="dropdown" class="dropdown-content">
-                        <a>Audio Only - mp3</a>
-                        </div>
-                    </div>
+                    <select class="dropdown" id="dropdown">
+                    </select>
+                    <button class="downloadBtn" id="downloadBtn">Download</button>
                 </div>
             </div>
-        </div> 
+        </div>
     </div>
+    <div class="modal" id="modal">
+        <div class="modal-header">
+            <div class="modal-title">Preparing Video</div>
+        </div>
+        <div class="modal-body">
+            <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
+        </div>
+    </div>
+    <div id="overlay"></div>
     <script src="./js/main.js"></script>
 </body>
 </html>

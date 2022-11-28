@@ -3,6 +3,7 @@ body {
     padding: 0;
     background-color: rgb(235, 235, 235);
     font-family: sans-serif;
+    box-sizing: border-box;
 }
 
 h1 {
@@ -137,56 +138,160 @@ input[type="submit"]:hover {
     margin-top: 10px;
 }
 
-.dropbtn {
-    position: absolute;
-    background-color: #04AA6D;
-    color: white;
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 10px;
-    border-color: transparent;
-    margin-top: -62px;
-    margin-left: 324px;
-}
-
-.dropbtn:active {
-    border-style: outset;
-}
-
 .dropdown {
     display: inline-block;
     user-select: none;
     border-radius: 20px;
-}
-
-.dropdown-content {
-    display: none;
+    border-color: transparent;
     position: absolute;
     background-color: #f1f1f1;
-    min-width: 160px;
+    min-width: 105px;
     box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     z-index: 1;
-    margin-left: 324px;
-    margin-top: -20px;
+    margin-left: 270px;
+    margin-top: -30px;
 }
 
-.dropdown-content a {
-    color: black;
-    padding: 12px 16px;
-    text-decoration: none;
-    display: block;
+.downloadBtn {
+    display: inline-block;
+    user-select: none;
+    border-radius: 20px;
+    border-color: transparent;
+    position: absolute;
+    background-color: #33db00;
+    min-width: 80px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+    margin-left: 170px;
+    margin-top: -30px;
 }
 
-.dropdown-content a:hover {
-    background-color: #ddd;
+.downloadBtn:hover {
+    background-color: #249b00;
+    cursor: pointer;
 }
 
-.dropdown:hover .dropdown-content {
-    display: block;
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 10;
+    background-color: #f1f1f1;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    width: 500px;
+    max-height: 80%;
+    transition: ease-in-out 0.3s;
 }
 
-.dropdown:hover .dropbtn {
-    background-color: #3e8e41;
+.modal.active {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.modal-header {
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header .modal-title {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.modal-body {
+    padding: 10px 15px;
+    display: flex;
+    margin-left: 200px;
+}
+
+#overlay {
+    position: fixed;
+    opacity: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+#overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.lds-ellipsis,
+.lds-ellipsis div {
+    box-sizing: border-box;
+}
+
+.lds-ellipsis {
+    display: inline-block;
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.lds-ellipsis div {
+    position: absolute;
+    top: 33.33333px;
+    width: 13.33333px;
+    height: 13.33333px;
+    border-radius: 50%;
+    background: currentColor;
+    animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+
+.lds-ellipsis div:nth-child(1) {
+    left: 8px;
+    animation: lds-ellipsis1 0.6s infinite;
+}
+
+.lds-ellipsis div:nth-child(2) {
+    left: 8px;
+    animation: lds-ellipsis2 0.6s infinite;
+}
+
+.lds-ellipsis div:nth-child(3) {
+    left: 32px;
+    animation: lds-ellipsis2 0.6s infinite;
+}
+
+.lds-ellipsis div:nth-child(4) {
+    left: 56px;
+    animation: lds-ellipsis3 0.6s infinite;
+}
+
+@keyframes lds-ellipsis1 {
+    0% {
+        transform: scale(0);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes lds-ellipsis3 {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(0);
+    }
+}
+
+@keyframes lds-ellipsis2 {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(24px, 0);
+    }
 }
 
 @keyframes spin {

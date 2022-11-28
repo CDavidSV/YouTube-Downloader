@@ -1,7 +1,8 @@
 import path from 'path';
 import express from 'express';
-import { getMetadata } from './download';
+import { downloadAudioOnly, downloadVideo, getMetadata } from './download';
 import open from 'open';
+import { Readable } from 'stream';
 
 (function () {
     const app = express();
@@ -16,20 +17,22 @@ import open from 'open';
     });
 
     app.post('/search', async (req, res, next) => {
-        const { parcel } = req.body;
-        if (!parcel) {
+        const { queryUrl } = req.body;
+        if (!queryUrl) {
             return res.status(400).send({ status: 'failed' });
         }
-        const metadata = await getMetadata(parcel);
+        const metadata = await getMetadata(queryUrl);
 
         if (!metadata) {
             return res.status(200).send({ status: 'failed' });
         };
 
-        let videoResolutions: { resolution: string, format: string }[] = [];
+        let videoResolutions: { resolution: string, format: string, itag: number }[] = [];
         metadata.formats.forEach(elem => {
             if (elem.qualityLabel !== null && !videoResolutions.some(i => { return i.resolution === elem.qualityLabel && i.format === elem.container })) {
-                videoResolutions.push({ resolution: elem.qualityLabel, format: elem.container });
+                if (elem.qualityLabel && elem.container && elem.contentLength) {
+                    videoResolutions.push({ resolution: elem.qualityLabel, format: elem.container, itag: elem.itag });
+                }
             }
         });
 
@@ -48,9 +51,29 @@ import open from 'open';
             duration: metadata.videoDetails.lengthSeconds,
             thumbnail: metadata.videoDetails.thumbnails[0].url,
             container: Object.assign({}, videoResolutions),
-            videoURL: parcel
+            videoURL: queryUrl
         };
         res.status(200).json(videoObj);
+    });
+
+    app.post('/download', async (req, res, next) => {
+        // Get resolution and format options.
+        const { selectedOptions } = req.body;
+        const { url } = req.body;
+
+        if (!selectedOptions || !url) {
+            return res.status(400).send({ status: 'failed' });
+        }
+
+        const options = selectedOptions.split(":");
+
+        let download;
+        if (options[1] == 'mp3') {
+            download = downloadAudioOnly(url);
+        } else {
+            download = downloadVideo(url, options[2]);
+        }
+        download.pipe(res, { end: true });
     });
 
     app.listen(port, () => {

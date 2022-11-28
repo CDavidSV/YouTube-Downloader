@@ -1,3 +1,4 @@
+// Document variables
 const form = document.getElementById('search-form');
 const linkInput = document.getElementById('link');
 const errorMsg = document.getElementById('error');
@@ -9,8 +10,14 @@ const videoAuthor = document.getElementById('author');
 const videoDuration = document.getElementById('duration');
 const downloadDropdown = document.getElementById('dropdown');
 const submitBtn = document.getElementById('submit-button');
+const downloadBtn = document.getElementById('downloadBtn');
+const closeModalBtn = document.getElementById('closeBtn');
+const overlay = document.getElementById('overlay');
+const modal = document.getElementById('modal');
 
+// Other variables.
 let link = '';
+let downloadVideoObj;
 
 linkInput.addEventListener('input', (event) => {
     link = event.target.value;
@@ -56,7 +63,7 @@ form.addEventListener('submit', async (event) => {
                 "content-Type": 'application/json'
             },
             body: JSON.stringify({
-                parcel: link
+                queryUrl: link
             })
         }).then((response) => response.json())
         .then((responseJSON) => {
@@ -69,6 +76,7 @@ form.addEventListener('submit', async (event) => {
         loader.style.opacity = '0%';
         return;
     }
+    downloadVideoObj = videoObj;
 
     linkInput.style.border = "none white";
     result.style.opacity = '100%';
@@ -90,9 +98,67 @@ form.addEventListener('submit', async (event) => {
     videoDuration.textContent = durationTimestamp;
 
     // Fill dropdown with available resolution options.
+    const element = document.createElement("option");
+    element.textContent = `Audio Only - mp3`;
+    element.value = `Audio Only:mp3`;
+    downloadDropdown.appendChild(element);
     for (let i = 0; i < Object.keys(videoObj.container).length; i++) {
-        const element = document.createElement("a");
+        const element = document.createElement("option");
         element.textContent = `${videoObj.container[i].resolution} - ${videoObj.container[i].format}`;
+        element.value = `${videoObj.container[i].resolution}:${videoObj.container[i].format}:${videoObj.container[i].itag}`;
         downloadDropdown.appendChild(element);
     }
-}); 
+});
+
+downloadBtn.addEventListener('click', async (event) => {
+    const chars = {
+        '\\': ' ',
+        '/': ' ',
+        ':': '-',
+        '*': '',
+        '?': '',
+        '<': '[',
+        '>': ']',
+        '|': '-'
+    };
+
+    let selectedOption = downloadDropdown.value;
+    let name = downloadVideoObj.title.replace(`/[\\/:*?"<>|]/g`, m => chars[m]);
+    name += `.${selectedOption.split(":")[1]}`;
+
+    modal.classList.add('active');
+    overlay.classList.add('active');
+
+    // Send selected options to the server.
+    const baseUrl = 'http://localhost:3000/download';
+    const download = await fetch(baseUrl,
+        {
+            method: 'POST',
+            headers: {
+                "content-Type": 'application/json'
+            },
+            body: JSON.stringify({
+                selectedOptions: selectedOption,
+                url: downloadVideoObj.videoURL
+            })
+        })
+
+    const downloadBlob = await download.blob();
+    const downloadUrl = URL.createObjectURL(downloadBlob);
+
+    const anchor = document.createElement("a");
+    anchor.href = downloadUrl;
+    anchor.download = name;
+    modal.appendChild(anchor);
+    anchor.click();
+    modal.removeChild(anchor);
+    URL.revokeObjectURL(downloadUrl);
+
+    modal.classList.remove('active');
+    overlay.classList.remove('active');
+});
+
+closeModalBtn.addEventListener('click', async (event) => {
+    modal.classList.remove('active');
+    overlay.classList.remove('active');
+});
