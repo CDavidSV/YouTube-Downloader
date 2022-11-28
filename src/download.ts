@@ -1,41 +1,57 @@
 import cp from 'child_process';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'ffmpeg-static';
-import { Readable, Stream, Writable } from 'stream';
-import fluentFfmpeg, { FfmpegCommand } from 'fluent-ffmpeg';
-
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-fluentFfmpeg.setFfmpegPath(ffmpegPath);
-
-type FormatOptions = "mp4" | "webm";
+import { Readable, Writable } from 'stream';
 
 // Merges video and audio streams.
 function mergeAudioAndVideo(video: Readable, audio: Readable) {
-    let ffmpegProcess = cp.spawn(ffmpeg as string, [
-        '-loglevel', '8', '-hide_banner',
-        '-i', 'pipe:3', '-i', 'pipe:4',
-        '-map', '0:a', '-map', '1:v',
-        '-c', 'copy',
-        '-f', 'matroska', 'pipe:5'
+    const ffmpegProcess = cp.spawn(ffmpeg as string, [
+        '-i', `pipe:3`,
+        '-i', `pipe:4`,
+        '-map', '0:v',
+        '-map', '1:a',
+        '-c:v', 'copy',
+        '-c:a', 'libmp3lame',
+        '-crf', '27',
+        '-preset', 'veryfast',
+        '-movflags', 'frag_keyframe+empty_moov',
+        '-f', 'mp4',
+        '-loglevel', 'error',
+        '-'
     ], {
-        windowsHide: true,
         stdio: [
-            'inherit', 'inherit', 'inherit',
-            'pipe', 'pipe', 'pipe'
-        ]
+            'pipe', 'pipe', 'pipe', 'pipe', 'pipe',
+        ],
     });
+
+    video.pipe(ffmpegProcess.stdio[3] as Writable);
+    audio.pipe(ffmpegProcess.stdio[4] as Writable);
 
     // When merging is completed.
     ffmpegProcess.on('close', () => {
         console.log("Merging Completed!");
     });
 
-    // Pipe audio and video to merge them using ffmpeg.
-    audio.pipe(ffmpegProcess.stdio[3] as Writable);
-    video.pipe(ffmpegProcess.stdio[4] as Writable);
+    let ffmpegLogs = ''
+
+    ffmpegProcess.stdio[2].on(
+        'data',
+        (chunk) => {
+            ffmpegLogs += chunk.toString()
+        }
+    )
+
+    ffmpegProcess.on(
+        'exit',
+        (exitCode) => {
+            if (exitCode === 1) {
+                console.error(ffmpegLogs)
+            }
+        }
+    )
 
     // Return the merged stream.
-    return ffmpegProcess.stdio[5 as any] as Readable;
+    return ffmpegProcess.stdio[1] as Readable;
 }
 
 async function getMetadata(url: string) {
@@ -45,33 +61,64 @@ async function getMetadata(url: string) {
 }
 
 function downloadVideo(url: string, itag: number) {
-    const videoStream = ytdl(url, { quality: itag, dlChunkSize: 0, highWaterMark: 1 << 25 }).on('error', (err) => {
+    let downloadProgress: any;
+
+    const videoStream = ytdl(url, { quality: itag }).on('error', (err) => {
         console.log(err);
         return;
+    }).on('progress', (length, downloaded, totallength) => {
+        // Calculate download progress.
+        const downloadedProgress = Math.round(downloaded * 100 / totallength);
+        if (downloadProgress !== downloadedProgress) {
+            downloadProgress = downloadedProgress;
+            console.clear();
+            const completion = progressBar(downloadProgress);
+            console.log(completion);
+        }
     });
 
     let final: Readable = videoStream;
 
-    // Video and audio itags.
-    const DASHaudio = [140, 251, 250, 249, 22, 139, 141, 249, 250, 251, 256, 258, 327, 338];
-    if (!DASHaudio.includes(itag)) {
+    if (itag != 18 && itag != 22) {
         const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
         const mergedVideo = mergeAudioAndVideo(videoStream, audioStream);
         final = mergedVideo;
     }
 
-    //const convertedStream = fluentFfmpeg({ source: final })
-    //.toFormat('mp4');
-    //.save(`./downloads/lil.mp4`);
     return final;
 }
 
 function downloadAudioOnly(url: string) {
-    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
+    let downloadProgress: any;
+    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
+        // Calculate download progress.
+        const downloadedProgress = Math.round(downloaded * 100 / totallength);
+        if (downloadProgress !== downloadedProgress) {
+            downloadProgress = downloadedProgress;
+            console.clear();
+            const completion = progressBar(downloadProgress);
+            console.log(completion);
+        }
+    });
 
     return audioStream;
 }
 
+function progressBar(progress: number) {
+    let progressBar: string = 'Downloading Video: \n [';
+
+    const total = 60;
+    for (let i = 0; i < total; i++) {
+        if (i < progress * total / 100) {
+            progressBar += '▮';
+        } else {
+            progressBar += ' ';
+        }
+    }
+    progressBar += ` ] ${progress}%`;
+
+    return progressBar;
+}
 export {
     getMetadata,
     downloadVideo,

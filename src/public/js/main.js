@@ -105,7 +105,7 @@ form.addEventListener('submit', async (event) => {
     for (let i = 0; i < Object.keys(videoObj.container).length; i++) {
         const element = document.createElement("option");
         element.textContent = `${videoObj.container[i].resolution} - ${videoObj.container[i].format}`;
-        element.value = `${videoObj.container[i].resolution}:${videoObj.container[i].format}:${videoObj.container[i].itag}`;
+        element.value = `${videoObj.container[i].resolution}:${videoObj.container[i].format}:${videoObj.container[i].itag}:${i}`;
         downloadDropdown.appendChild(element);
     }
 });
@@ -122,14 +122,21 @@ downloadBtn.addEventListener('click', async (event) => {
         '|': '-'
     };
 
-    let selectedOption = downloadDropdown.value;
+    let selectedOption = downloadDropdown.value.split(':');
     let name = downloadVideoObj.title.replace(`/[\\/:*?"<>|]/g`, m => chars[m]);
-    name += `.${selectedOption.split(":")[1]}`;
+    name += `.${selectedOption[1]}`;
 
     modal.classList.add('active');
     overlay.classList.add('active');
 
     // Send selected options to the server.
+    if (selectedOption[1] == 'webm') {
+        window.open(downloadVideoObj.container[selectedOption[3]].url, "_blank");
+        modal.classList.remove('active');
+        overlay.classList.remove('active');
+        return;
+    }
+
     const baseUrl = 'http://localhost:3000/download';
     const download = await fetch(baseUrl,
         {
@@ -139,7 +146,7 @@ downloadBtn.addEventListener('click', async (event) => {
             },
             body: JSON.stringify({
                 selectedOptions: selectedOption,
-                url: downloadVideoObj.videoURL
+                url: downloadVideoObj.videoURL,
             })
         })
 
@@ -154,11 +161,6 @@ downloadBtn.addEventListener('click', async (event) => {
     modal.removeChild(anchor);
     URL.revokeObjectURL(downloadUrl);
 
-    modal.classList.remove('active');
-    overlay.classList.remove('active');
-});
-
-closeModalBtn.addEventListener('click', async (event) => {
     modal.classList.remove('active');
     overlay.classList.remove('active');
 });

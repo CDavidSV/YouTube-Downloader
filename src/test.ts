@@ -1,11 +1,7 @@
+
 import ytdl from 'ytdl-core';
-import fluentFfmpeg from 'fluent-ffmpeg';
-
-const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
-fluentFfmpeg.setFfmpegPath(ffmpegPath);
-
 (async function () {
-    const info = await ytdl.getInfo('https://www.youtube.com/watch?v=5Cdh0KdFAcc').catch(err => { });
+    const info = await ytdl.getInfo('https://www.youtube.com/watch?v=hvX0maAJsnY').catch(err => { });
     console.log(info);
 
     //const audioStream = ytdl('https://www.youtube.com/watch?v=kHTHVtwjKQo', { filter: 'audioonly', quality: 'highestaudio' });
