@@ -93,9 +93,9 @@ form.addEventListener('submit', async (event) => {
     // Convert time in secods to hh:mm:ss format.
     let durationTimestamp;
     if (parseInt(videoObj.duration) < 3600) {
-        durationTimestamp = new Date(parseInt(videoObj.duration) * 1000).toISOString().slice(14, 19);
+        durationTimestamp = new Date(parseInt(videoObj.duration - 1) * 1000).toISOString().slice(14, 19);
     } else {
-        durationTimestamp = new Date(parseInt(videoObj.duration) * 1000).toISOString().slice(11, 19);
+        durationTimestamp = new Date(parseInt(videoObj.duration - 1) * 1000).toISOString().slice(11, 19);
     }
     videoDuration.textContent = durationTimestamp;
 

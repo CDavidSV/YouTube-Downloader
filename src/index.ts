@@ -3,7 +3,17 @@ import express from 'express';
 import { deleteFile, downloadAudioOnly, downloadVideo, getMetadata, videoFile } from './download';
 import open from 'open';
 import { Readable } from 'stream';
-import e from 'express';
+
+function sendVideo(res: any, video: videoFile) {
+    if (res.destroyed) {
+        video.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
+        deleteFile(video.fileIndex, video.fileName);
+    }
+    video.finalReadable.pipe(res, { end: true }).once("close", function () {
+        video.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
+        deleteFile(video.fileIndex, video.fileName);
+    });
+}
 
 (function () {
     const app = express();
@@ -78,17 +88,11 @@ import e from 'express';
             downloadedAudio = downloadAudioOnly(url);
             downloadedAudio.pipe(res, { end: true });
         } else if (format == 'mp4') {
-            downloadedVideo = await downloadVideo(url, parseInt(itag), format) ;
-            downloadedVideo.finalReadable.pipe(res, { end: true }).once("close", function () {
-                downloadedVideo.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
-                deleteFile(downloadedVideo.fileIndex, downloadedVideo.fileName);
-            });;
+            downloadedVideo = await downloadVideo(url, parseInt(itag), format);
+            sendVideo(res, downloadedVideo);
         } else {
             downloadedVideo = await downloadVideo(url, parseInt(itag), format);
-            downloadedVideo.finalReadable.pipe(res, { end: true }).once("close", function () {
-                downloadedVideo.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
-                deleteFile(downloadedVideo.fileIndex, downloadedVideo.fileName);
-            });;
+            sendVideo(res, downloadedVideo);
         }
     });
 

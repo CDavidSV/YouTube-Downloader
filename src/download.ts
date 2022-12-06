@@ -113,7 +113,12 @@ async function downloadVideo(url: string, itag: number, format: formats) {
     let fileName = `temp${fileNum}.mp4`;
     if (itag !== 18 && itag !== 22 && format !== 'webm') {
         const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
-        while (fileIndexes.includes(fileNum)) {
+        while (fileIndexes.includes(fileNum) || fs.existsSync(`./downloads/${fileName}`)) {
+            if(!fileIndexes.includes(fileNum)) {
+                fileIndexes.push(fileNum);
+            } else if (fileIndexes.includes(fileNum) && !fs.existsSync(`./downloads/${fileName}`)) {
+                fileIndexes.splice(fileIndexes.indexOf(fileNum), 1);
+            }
             fileNum++;
             fileName = `temp${fileNum}.mp4`;
         }
