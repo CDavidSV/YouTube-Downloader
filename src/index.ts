@@ -24,7 +24,7 @@ function sendVideo(res: any, video: videoFile) {
     app.use(express.json());
 
     app.get('/', (req: express.Request, res: express.Response) => {
-        res.sendFile(path.join(__dirname, './page/index.html'))
+        res.sendFile(path.join(__dirname, './page/index.html'));
     });
 
     app.post('/search', async (req, res, next) => {
