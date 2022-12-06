@@ -9,12 +9,22 @@ let fileIndexes: number[] = [];
 type videoFile = {fileIndex: number, fileName: string, finalReadable: Readable};
 type formats = 'mp4' | 'webm';
 
+/**
+ * 
+ * @param index file index
+ * @param name file name
+ */
 function deleteFile(index: number, name: string) {
     fs.unlink(`./downloads/${name}`, () => {});
     fileIndexes.splice(fileIndexes.indexOf(index), 1);
 }
-
-// Merges video and audio streams.
+/**
+ * Merges video and audio streams.
+ * @param video Readable video stream
+ * @param audio Readable audio stream
+ * @param title Video Title
+ * @returns ffmpeg Child Process
+ */
 function mergeAudioAndVideo(video: Readable, audio: Readable, title: string) {
     const ffmpegProcess = cp.spawn(ffmpeg as string, [
         '-i', `pipe:3`,
@@ -62,12 +72,24 @@ function mergeAudioAndVideo(video: Readable, audio: Readable, title: string) {
     return ffmpegProcess;
 }
 
+/**
+ * Get video information.
+ * @param url video url
+ * @returns Video info and metadata
+ */
 async function getMetadata(url: string) {
     const info = await ytdl.getInfo(url).catch(err => { });
 
     return info;
 }
 
+/**
+ * 
+ * @param url video url
+ * @param itag valid youtube itag
+ * @param format can be mp4, webm or mp3
+ * @returns VideoFile type with readable video stream
+ */
 async function downloadVideo(url: string, itag: number, format: formats) {
     let downloadProgress: any;
 
@@ -109,6 +131,11 @@ async function downloadVideo(url: string, itag: number, format: formats) {
     return { fileIndex: fileNum, fileName: fileName, finalReadable: final} as videoFile;
 }
 
+/**
+ * 
+ * @param url Video url
+ * @returns Readable audio stream
+ */
 function downloadAudioOnly(url: string) {
     let downloadProgress: any;
     const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {

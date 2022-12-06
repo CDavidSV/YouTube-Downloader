@@ -102,7 +102,9 @@ form.addEventListener('submit', async (event) => {
     // Fill dropdown with available resolution options.
     const element = document.createElement("option");
     element.textContent = `Audio Only | mp3`;
-    element.value = `Audio Only:mp3`;
+    element.setAttribute('resolution', 'none');
+    element.setAttribute('format', 'mp3');
+    element.setAttribute('itag', 140);
     downloadDropdown.appendChild(element);
     for (let i = 0; i < Object.keys(videoObj.container).length; i++) {
         const element = document.createElement("option");

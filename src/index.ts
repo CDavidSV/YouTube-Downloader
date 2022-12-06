@@ -96,5 +96,5 @@ import e from 'express';
         console.log(`Server has started on port: ${port}`);
     });
 
-    // open("http://localhost:3000");
+    open("http://localhost:3000");
 })();
