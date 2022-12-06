@@ -1,23 +1,32 @@
 import cp from 'child_process';
 import ytdl from 'ytdl-core';
 import ffmpeg from 'ffmpeg-static';
+import fs from 'fs'
 import { Readable, Writable } from 'stream';
 
+let fileIndexes: number[] = [];
+
+type videoFile = {fileIndex: number, fileName: string, finalReadable: Readable};
+type formats = 'mp4' | 'webm';
+
+function deleteFile(index: number, name: string) {
+    fs.unlink(`./downloads/${name}`, () => {});
+    fileIndexes.splice(fileIndexes.indexOf(index), 1);
+}
+
 // Merges video and audio streams.
-function mergeAudioAndVideo(video: Readable, audio: Readable) {
+function mergeAudioAndVideo(video: Readable, audio: Readable, title: string) {
     const ffmpegProcess = cp.spawn(ffmpeg as string, [
         '-i', `pipe:3`,
         '-i', `pipe:4`,
         '-map', '0:v',
         '-map', '1:a',
         '-c:v', 'copy',
-        '-c:a', 'libmp3lame',
-        '-crf', '27',
+        '-c:a', 'aac',
+        '-crf', '17',
         '-preset', 'veryfast',
-        '-movflags', 'frag_keyframe+empty_moov',
         '-f', 'mp4',
-        '-loglevel', 'error',
-        '-'
+        `./downloads/${title}`
     ], {
         stdio: [
             'pipe', 'pipe', 'pipe', 'pipe', 'pipe',
@@ -50,8 +59,7 @@ function mergeAudioAndVideo(video: Readable, audio: Readable) {
         }
     )
 
-    // Return the merged stream.
-    return ffmpegProcess.stdio[1] as Readable;
+    return ffmpegProcess;
 }
 
 async function getMetadata(url: string) {
@@ -60,7 +68,7 @@ async function getMetadata(url: string) {
     return info;
 }
 
-function downloadVideo(url: string, itag: number) {
+async function downloadVideo(url: string, itag: number, format: formats) {
     let downloadProgress: any;
 
     const videoStream = ytdl(url, { quality: itag }).on('error', (err) => {
@@ -79,13 +87,26 @@ function downloadVideo(url: string, itag: number) {
 
     let final: Readable = videoStream;
 
-    if (itag != 18 && itag != 22) {
+    let fileNum = 1;
+    let fileName = `temp${fileNum}.mp4`;
+    if (itag !== 18 && itag !== 22 && format !== 'webm') {
         const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' });
-        const mergedVideo = mergeAudioAndVideo(videoStream, audioStream);
-        final = mergedVideo;
+        while (fileIndexes.includes(fileNum)) {
+            fileNum++;
+            fileName = `temp${fileNum}.mp4`;
+        }
+        fileIndexes.push(fileNum);
+        
+        await new Promise<void>((resolve) => { // wait
+            mergeAudioAndVideo(videoStream, audioStream, fileName)
+            .on('close', () => {
+              resolve(); // finish
+            })
+        })
+        final = fs.createReadStream(`./downloads/${fileName}`);
     }
 
-    return final;
+    return { fileIndex: fileNum, fileName: fileName, finalReadable: final} as videoFile;
 }
 
 function downloadAudioOnly(url: string) {
@@ -119,8 +140,15 @@ function progressBar(progress: number) {
 
     return progressBar;
 }
+
+// test
+// downloadVideo('https://www.youtube.com/watch?v=QjCkFem2y0U', 137);
+
 export {
     getMetadata,
     downloadVideo,
-    downloadAudioOnly
+    downloadAudioOnly,
+    deleteFile,
+    formats,
+    videoFile,
 }

@@ -1,7 +1,9 @@
 import path from 'path';
 import express from 'express';
-import { downloadAudioOnly, downloadVideo, getMetadata } from './download';
+import { deleteFile, downloadAudioOnly, downloadVideo, getMetadata, videoFile } from './download';
 import open from 'open';
+import { Readable } from 'stream';
+import e from 'express';
 
 (function () {
     const app = express();
@@ -26,10 +28,17 @@ import open from 'open';
             return res.status(200).send({ status: 'failed' });
         };
 
-        let videoResolutions: { resolution: string, format: string, itag: number, url: string }[] = [];
+        let videoResolutions: { resolution: string, hasAudio: boolean, format: string, itag: number, url: string }[] = [];
         metadata.formats.forEach(elem => {
-            if (elem.qualityLabel !== null && elem.qualityLabel && elem.container && (elem.contentLength || elem.itag == 18)) {
-                videoResolutions.push({ resolution: elem.qualityLabel, format: elem.container, itag: elem.itag, url: elem.url });
+            if (elem.qualityLabel !== null && elem.qualityLabel && elem.container && (elem.contentLength || elem.itag == 18 || elem.itag == 22)) {
+                let audio: boolean ;
+                if (elem.container != 'webm') {
+                    audio = true;
+                } else {
+                    audio = false
+                }
+
+                videoResolutions.push({ resolution: elem.qualityLabel, hasAudio: audio, format: elem.container, itag: elem.itag, url: elem.url });
             }
         });
 
@@ -55,31 +64,37 @@ import open from 'open';
 
     app.post('/download', async (req, res, next) => {
         // Get resolution and format options.
-        const { selectedOptions } = req.body;
+        const { resolution } = req.body;
+        const { format } = req.body;
+        const { itag } = req.body;
         const { url } = req.body;
 
-        if (!selectedOptions || !url) {
+        if (!resolution || !format || !itag || !url) {
             return res.status(400).send({ status: 'failed' });
         }
-        const options = selectedOptions;
-
-        let download;
-        if (options[1] == 'mp3') {
-            download = downloadAudioOnly(url);
-            download.pipe(res, { end: true });
-        } else if (options[1] == 'mp4') {
-            download = downloadVideo(url, options[2]);
-            download.pipe(res, { end: true });
+        let downloadedVideo: videoFile;
+        let downloadedAudio: Readable;
+        if (format == 'mp3') {
+            downloadedAudio = downloadAudioOnly(url);
+            downloadedAudio.pipe(res, { end: true });
+        } else if (format == 'mp4') {
+            downloadedVideo = await downloadVideo(url, parseInt(itag), format) ;
+            downloadedVideo.finalReadable.pipe(res, { end: true }).once("close", function () {
+                downloadedVideo.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
+                deleteFile(downloadedVideo.fileIndex, downloadedVideo.fileName);
+            });;
         } else {
-            // Redirect.
-            return res.status(400).send({ status: 'success' });
+            downloadedVideo = await downloadVideo(url, parseInt(itag), format);
+            downloadedVideo.finalReadable.pipe(res, { end: true }).once("close", function () {
+                downloadedVideo.finalReadable.destroy(); // make sure the stream is closed, don't close if the download aborted.
+                deleteFile(downloadedVideo.fileIndex, downloadedVideo.fileName);
+            });;
         }
-
     });
 
     app.listen(port, () => {
         console.log(`Server has started on port: ${port}`);
     });
 
-    open("http://localhost:3000");
+    // open("http://localhost:3000");
 })();

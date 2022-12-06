@@ -14,15 +14,18 @@ const downloadBtn = document.getElementById('downloadBtn');
 const closeModalBtn = document.getElementById('closeBtn');
 const overlay = document.getElementById('overlay');
 const modal = document.getElementById('modal');
+const clear = document.getElementById('clear');
 
 // Other variables.
 let link = '';
 let downloadVideoObj;
 
+// Get link input.
 linkInput.addEventListener('input', (event) => {
     link = event.target.value;
 });
 
+// Search for the video.
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
@@ -49,10 +52,9 @@ form.addEventListener('submit', async (event) => {
     }
 
     downloadDropdown.innerHTML = '';
-    result.style.opacity = '0%';
-    loader.style.opacity = '100%';
-    loader.style.transform = 'scale(1)';
     errorMsg.textContent = "";
+    loader.classList.add('loading');
+    result.classList.remove('active');
 
     // Send data to the server.
     const baseUrl = 'http://localhost:3000/search';
@@ -79,8 +81,8 @@ form.addEventListener('submit', async (event) => {
     downloadVideoObj = videoObj;
 
     linkInput.style.border = "none white";
-    result.style.opacity = '100%';
-    loader.style.opacity = '0%';
+    loader.classList.remove('loading');
+    result.classList.add('active');
 
     thumbnail.src = videoObj.thumbnail;
     videoTitle.textContent = videoObj.title;
@@ -99,43 +101,34 @@ form.addEventListener('submit', async (event) => {
 
     // Fill dropdown with available resolution options.
     const element = document.createElement("option");
-    element.textContent = `Audio Only - mp3`;
+    element.textContent = `Audio Only | mp3`;
     element.value = `Audio Only:mp3`;
     downloadDropdown.appendChild(element);
     for (let i = 0; i < Object.keys(videoObj.container).length; i++) {
         const element = document.createElement("option");
-        element.textContent = `${videoObj.container[i].resolution} - ${videoObj.container[i].format}`;
-        element.value = `${videoObj.container[i].resolution}:${videoObj.container[i].format}:${videoObj.container[i].itag}:${i}`;
+        let hasAudio;
+        if (videoObj.container[i].hasAudio) {
+            hasAudio = '🔊';
+        } else {
+            hasAudio = '🔇';
+        }
+        element.textContent = `${hasAudio} ${videoObj.container[i].resolution} | ${videoObj.container[i].format}`;
+        element.setAttribute('resolution', videoObj.container[i].resolution);
+        element.setAttribute('format', videoObj.container[i].format);
+        element.setAttribute('itag', videoObj.container[i].itag);
         downloadDropdown.appendChild(element);
     }
 });
 
+// Begin download.
 downloadBtn.addEventListener('click', async (event) => {
-    const chars = {
-        '\\': ' ',
-        '/': ' ',
-        ':': '-',
-        '*': '',
-        '?': '',
-        '<': '[',
-        '>': ']',
-        '|': '-'
-    };
-
-    let selectedOption = downloadDropdown.value.split(':');
-    let name = downloadVideoObj.title.replace(`/[\\/:*?"<>|]/g`, m => chars[m]);
-    name += `.${selectedOption[1]}`;
+    const videoResolution = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('resolution');
+    const videoFormat = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('format');
+    const videoItag = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('itag');
+    const name = `${downloadVideoObj.title}.${videoFormat}`;
 
     modal.classList.add('active');
     overlay.classList.add('active');
-
-    // Send selected options to the server.
-    if (selectedOption[1] == 'webm') {
-        window.open(downloadVideoObj.container[selectedOption[3]].url, "_blank");
-        modal.classList.remove('active');
-        overlay.classList.remove('active');
-        return;
-    }
 
     const baseUrl = 'http://localhost:3000/download';
     const download = await fetch(baseUrl,
@@ -145,7 +138,9 @@ downloadBtn.addEventListener('click', async (event) => {
                 "content-Type": 'application/json'
             },
             body: JSON.stringify({
-                selectedOptions: selectedOption,
+                resolution: videoResolution,
+                format: videoFormat,
+                itag: videoItag,
                 url: downloadVideoObj.videoURL,
             })
         })
@@ -163,4 +158,9 @@ downloadBtn.addEventListener('click', async (event) => {
 
     modal.classList.remove('active');
     overlay.classList.remove('active');
+});
+
+// Clear input.
+clear.addEventListener('click', ()=> {
+    form.reset();
 });

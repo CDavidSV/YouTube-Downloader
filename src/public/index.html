@@ -9,21 +9,23 @@
 </head>
 <body>
     <div class="box">
-        <h1>Youtube Video Downloader</h1>
+        <h1 style="color: white;">Youtube Video Downloader</h1>
         <form id="search-form" method="get" action="/">
             <input id="link" type="text" name="" placeholder="Youtube link goes here...">
-            <input id="submit-button" type="submit" name="" value="Search">
+            <input id="submit-button" type="submit" name="" value="Search">  
+            <button class="clearBtn" id="clear" type="button">&#10005;</button>
             <p id="error"></p>
         </form>
-        <div id="loader-div">
+        
+        <div id="loader-div" class="loader-div">
             <div class="loader"></div>
         </div>
         <div id="video-result" class="video-container">
             <div class="data-container">
                 <img id="thumbnail" class="thumbnail" src="" alt="">
                 <div id="video-data" class="video-data">
-                    <a id="title" class="title" href="">Video Title</a>
-                    <a id="author" class="author" href="">Author</a>
+                    <a id="title" class="title" href="" target="_blank">Video Title</a>
+                    <a id="author" class="author" href="" target="_blank">Author</a>
                     <p id="duration" class="duration">00:00:00</p>
                     <select class="dropdown" id="dropdown">
                     </select>
@@ -37,6 +39,7 @@
             <div class="modal-title">Preparing Video...</div>
         </div>
         <div class="modal-body">
+            This might take a few minutes.
             <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
         </div>
     </div>
