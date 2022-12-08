@@ -20,6 +20,36 @@ const clear = document.getElementById('clear');
 let link = '';
 let downloadVideoObj;
 
+/**
+ * Converts seconds to a valid HH:MM:SS time format.
+ * @param {*} timestamp time value in seconds.
+ */
+function convertTime(timestamp) {
+    const hours = Math.floor(timestamp / 36000);
+    const minutes = Math.floor(timestamp / 60 % 60);
+    const seconds = Math.floor(timestamp % 60);
+
+    let timeStr = '';
+
+    if(hours > 0) {
+        timeStr += `${hours}:`;
+    }
+
+    if (minutes < 10) {
+        timeStr += `0${minutes}:`
+    } else {
+        timeStr += `${minutes}:`
+    }
+
+    if (seconds < 10) {
+        timeStr += `0${seconds}`
+    } else {
+        timeStr += `${seconds}`
+    }
+
+    return timeStr;
+}
+
 // Get link input.
 linkInput.addEventListener('input', (event) => {
     link = event.target.value;
@@ -90,14 +120,8 @@ form.addEventListener('submit', async (event) => {
     videoAuthor.textContent = videoObj.author;
     videoAuthor.href = videoObj.authorURL;
 
-    // Convert time in secods to hh:mm:ss format.
-    let durationTimestamp;
-    if (parseInt(videoObj.duration) < 3600) {
-        durationTimestamp = new Date(parseInt(videoObj.duration - 1) * 1000).toISOString().slice(14, 19);
-    } else {
-        durationTimestamp = new Date(parseInt(videoObj.duration - 1) * 1000).toISOString().slice(11, 19);
-    }
-    videoDuration.textContent = durationTimestamp;
+    // Convert time in seconds to hh:mm:ss format.
+    videoDuration.textContent = convertTime(videoObj.duration - 1);
 
     // Fill dropdown with available resolution options.
     const element = document.createElement("option");
