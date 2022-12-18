@@ -25,7 +25,7 @@ let downloadVideoObj;
  * @param {*} timestamp time value in seconds.
  */
 function convertTime(timestamp) {
-    const hours = Math.floor(timestamp / 36000);
+    const hours = Math.floor(timestamp / 3600);
     const minutes = Math.floor(timestamp / 60 % 60);
     const seconds = Math.floor(timestamp % 60);
 
