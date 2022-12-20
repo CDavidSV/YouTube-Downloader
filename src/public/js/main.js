@@ -19,6 +19,7 @@ const clear = document.getElementById('clear');
 // Other variables.
 let link = '';
 let downloadVideoObj;
+let APIUrl = 'http://localhost:3000'
 
 /**
  * Converts seconds to a valid HH:MM:SS time format.
@@ -66,13 +67,6 @@ form.addEventListener('submit', async (event) => {
         return;
     }
 
-    submitBtn.disabled = true;
-    submitBtn.style.backgroundColor = "#8b0000"
-    setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.style.backgroundColor = "#FF0000"
-    }, 5000);
-
     // Check if it's a valid link.
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|playlist\?|watch\?v=|watch\?.+(?:&|&#38;);v=))([a-zA-Z0-9\-_]{11})?(?:(?:\?|&|&#38;)index=((?:\d){1,3}))?(?:(?:\?|&|&#38;)?list=([a-zA-Z\-_0-9]{34}))?(?:\S+)?/g;
     if (!regex.test(link)) {
@@ -81,14 +75,20 @@ form.addEventListener('submit', async (event) => {
         return;
     }
 
+    submitBtn.disabled = true;
+    submitBtn.style.backgroundColor = "#8b0000"
+    const cooldown = setTimeout(() => {
+        submitBtn.disabled = false;
+        submitBtn.style.backgroundColor = "#FF0000"
+    }, 5000);
+
     downloadDropdown.innerHTML = '';
     errorMsg.textContent = "";
     loader.classList.add('loading');
     result.classList.remove('active');
 
     // Send data to the server.
-    const baseUrl = 'http://localhost:3000/search';
-    const videoObj = await fetch(baseUrl,
+    const videoObj = await fetch(`${APIUrl}/search`,
         {
             method: 'POST',
             headers: {
@@ -103,9 +103,12 @@ form.addEventListener('submit', async (event) => {
         });
 
     if (videoObj.status == "failed") {
-        errorMsg.textContent = "Error: Invalid URL";
+        errorMsg.textContent = "Error: Invalid URL"; // Error returned by the server.
         linkInput.style.border = "1px solid #ff0000";
-        loader.style.opacity = '0%';
+        loader.classList.remove('loading');
+        clearTimeout(cooldown);
+        submitBtn.disabled = false;
+        submitBtn.style.backgroundColor = "#FF0000"
         return;
     }
     downloadVideoObj = videoObj;
@@ -156,8 +159,7 @@ downloadBtn.addEventListener('click', async (event) => {
     modal.classList.add('active');
     overlay.classList.add('active');
 
-    const baseUrl = 'http://localhost:3000/download';
-    const download = await fetch(baseUrl,
+    const download = await fetch(`${APIUrl}/download`,
         {
             method: 'POST',
             headers: {
