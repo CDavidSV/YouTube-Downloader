@@ -6,7 +6,7 @@ import { Readable, Writable } from 'stream';
 
 let fileIndexes: string[] = [];
 
-type videoFile = { fileName: string | null, finalReadable: Readable };
+type videoFile = { fileName: string | null, finalReadable: Readable, size: number };
 type formats = 'mp4' | 'webm';
 
 /**
@@ -80,9 +80,16 @@ function mergeAudioAndVideo(video: Readable, audio: Readable, fileName: string) 
  * @returns Video info and metadata
  */
 async function getMetadata(url: string) {
-    const info = await ytdl.getInfo(url).catch(err => { });
+    let info;
 
-    return info;
+    let metadata: {data: any, status: string, error: string | null};
+    metadata = await ytdl.getInfo(url).then((info) => {
+        return {data: info, status: "success", error: null};
+    }).catch((err => {
+        return {data: null, status: "failed", error: err};
+    }));
+    
+    return metadata;
 }
 
 /**
@@ -135,28 +142,33 @@ async function downloadMergedVideo(url: string, itag: number, format: formats) {
     audioStream.destroy();
     videoStream.destroy();
     final = fs.createReadStream(`./downloads/${fileName}`);
+    const size = fs.statSync(`./downloads/${fileName}`).size;
 
-    return { fileName: fileName, finalReadable: final} as videoFile;
+    return { fileName: fileName, finalReadable: final, size: size} as videoFile;
 }
 
-function downloadVideo(url: string, itag: number) {
+async function downloadVideo(url: string, itag: number) {
     let downloadProgress: any;
+    let size: number = 0;
     
-    const videoStream = ytdl(url, { quality: itag, highWaterMark: 1 << 25 }).on('error', (err) => {
-        console.log(err);
-        return;
-    }).on('progress', (length, downloaded, totallength) => {
-        // Calculate download progress.
-        const downloadedProgress = Math.round(downloaded * 100 / totallength);
-        if (downloadProgress !== downloadedProgress) {
-            downloadProgress = downloadedProgress;
-            console.clear();
-            const completion = progressBar(downloadProgress);
-            console.log(completion);
-        }
+    const videoStream = await new Promise<Readable>((resolve) => {
+        const videoStream = ytdl(url, { quality: itag, highWaterMark: 1 << 25 }).on('error', (err) => {
+            console.log(err);
+            return;
+        }).on('progress', (length, downloaded, totallength) => {
+            size = totallength;
+            // Calculate download progress.
+            const downloadedProgress = Math.round(downloaded * 100 / totallength);
+            if (downloadProgress !== downloadedProgress) {
+                downloadProgress = downloadedProgress;
+                console.clear();
+                const completion = progressBar(downloadProgress);
+                console.log(completion);
+            }
+            resolve(videoStream);
+        });
     });
-
-    return videoStream;
+    return { stream: videoStream, size: size};
 }
 
 /**
@@ -164,20 +176,26 @@ function downloadVideo(url: string, itag: number) {
  * @param url Video url
  * @returns Readable audio stream
  */
-function downloadAudioOnly(url: string) {
+async function downloadAudioOnly(url: string) {
     let downloadProgress: any;
-    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
-        // Calculate download progress.
-        const downloadedProgress = Math.round(downloaded * 100 / totallength);
-        if (downloadProgress !== downloadedProgress) {
-            downloadProgress = downloadedProgress;
-            console.clear();
-            const completion = progressBar(downloadProgress);
-            console.log(completion);
-        }
+    let size: number = 0;
+
+    const audioStream = await new Promise<Readable>((resolve) => {
+        const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
+            size = totallength;
+            // Calculate download progress.
+            const downloadedProgress = Math.round(downloaded * 100 / totallength);
+            if (downloadProgress !== downloadedProgress) {
+                downloadProgress = downloadedProgress;
+                console.clear();
+                const completion = progressBar(downloadProgress);
+                console.log(completion);
+            }
+            resolve(audioStream);
+        })
     });
 
-    return audioStream;
+    return { stream: audioStream, size: size};
 }
 
 function progressBar(progress: number) {

@@ -15,6 +15,10 @@ const closeModalBtn = document.getElementById('closeBtn');
 const overlay = document.getElementById('overlay');
 const modal = document.getElementById('modal');
 const clear = document.getElementById('clear');
+const progress = document.getElementById('file');
+const progressContainer = document.querySelector('.progress-container');
+const loadEllipsis = document.querySelector('.lds-ellipsis');
+const progressPercentage = document.querySelector('.progress-done-percentage');
 
 // Other variables.
 let link = '';
@@ -68,7 +72,7 @@ form.addEventListener('submit', async (event) => {
     }
 
     // Check if it's a valid link.
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|playlist\?|watch\?v=|watch\?.+(?:&|&#38;);v=))([a-zA-Z0-9\-_]{11})?(?:(?:\?|&|&#38;)index=((?:\d){1,3}))?(?:(?:\?|&|&#38;)?list=([a-zA-Z\-_0-9]{34}))?(?:\S+)?/g;
+    const regex = /(?:https?:)?(?:\/\/)?(?:[0-9A-Z-]+\.)?(?:youtu\.be\/|youtube(?:-nocookie)?\.com\S*?[^\w\s-])([\w-]{11})(?=[^\w-]|$)(?![?=&+%\w.-]*(?:['"][^<>]*>|<\/a>))[?=&+%\w.-]*/gim;
     if (!regex.test(link)) {
         errorMsg.textContent = "Error: Invalid URL";
         linkInput.style.border = "1px solid #ff0000";
@@ -103,7 +107,7 @@ form.addEventListener('submit', async (event) => {
         });
 
     if (videoObj.status == "failed") {
-        errorMsg.textContent = "Error: Invalid URL"; // Error returned by the server.
+        errorMsg.textContent = `Error: Video not found`; // Error returned by the server.
         linkInput.style.border = "1px solid #ff0000";
         loader.classList.remove('loading');
         clearTimeout(cooldown);
@@ -151,6 +155,8 @@ form.addEventListener('submit', async (event) => {
 
 // Begin download.
 downloadBtn.addEventListener('click', async (event) => {
+    progress.style = `transform: scaleX(0);`
+    progressContainer.classList.remove('downloading');
     const videoResolution = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('resolution');
     const videoFormat = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('format');
     const videoItag = downloadDropdown.options[downloadDropdown.selectedIndex].getAttribute('itag');
@@ -158,34 +164,47 @@ downloadBtn.addEventListener('click', async (event) => {
 
     modal.classList.add('active');
     overlay.classList.add('active');
+    loadEllipsis.style.opacity = 1;
 
-    const download = await fetch(`${APIUrl}/download`,
-        {
-            method: 'POST',
-            headers: {
-                "content-Type": 'application/json'
-            },
-            body: JSON.stringify({
-                resolution: videoResolution,
-                format: videoFormat,
-                itag: videoItag,
-                url: downloadVideoObj.videoURL,
-            })
-        })
+    const request = new XMLHttpRequest();
+    request.open('POST', `${APIUrl}/download`, true);
+    request.setRequestHeader("Content-Type", "application/json");
+    request.responseType = "blob";   
 
-    const downloadBlob = await download.blob();
-    const downloadUrl = URL.createObjectURL(downloadBlob);
+    request.onload = () => {
+        if (request.status !== 200) return;
+        const downloadBlob = request.response;
+        const downloadUrl = URL.createObjectURL(downloadBlob);
 
-    const anchor = document.createElement("a");
-    anchor.href = downloadUrl;
-    anchor.download = name;
-    modal.appendChild(anchor);
-    anchor.click();
-    modal.removeChild(anchor);
-    URL.revokeObjectURL(downloadUrl);
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = name;
+        modal.appendChild(anchor);
+        anchor.click();
+        modal.removeChild(anchor);
+        URL.revokeObjectURL(downloadUrl);
 
-    modal.classList.remove('active');
-    overlay.classList.remove('active');
+        modal.classList.remove('active');
+        overlay.classList.remove('active');
+    };
+
+    request.onprogress = (e) => {
+        const total = e.total;
+        const loaded = e.loaded;
+        const progressDone = (loaded / total) * 100;
+
+        progressContainer.classList.add('downloading');
+        loadEllipsis.style.opacity = 0;
+        progress.style = `transform: scaleX(${progressDone / 100});`
+        progressPercentage.innerHTML = `${progressDone.toFixed(1)}%`;
+    }
+
+    request.send(JSON.stringify({
+        resolution: videoResolution,
+        format: videoFormat,
+        itag: videoItag,
+        url: downloadVideoObj.videoURL,
+    }));
 });
 
 // Clear input.

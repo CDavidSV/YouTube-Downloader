@@ -16,8 +16,7 @@
                 <input id="submit-button" type="submit" name="" value="Search">  
                 <button class="clearBtn" id="clear" type="button">&#10005;</button>
                 <p id="error"></p>
-            </form>
-            
+            </form> 
             <div id="loader-div" class="loader-div">
                 <div class="loader"></div>
             </div>
@@ -41,7 +40,13 @@
             <div class="modal-title">Preparing Video...</div>
         </div>
         <div class="modal-body">
-            This might take a few minutes.
+            <p>This might take a few minutes.</p>
+            <div class="progress-container">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="file"></div>
+                </div>
+                <p class="progress-done-percentage">0%</p>
+            </div>
             <div class="lds-ellipsis"><div></div><div></div><div></div><div></div></div>
         </div>
     </div>

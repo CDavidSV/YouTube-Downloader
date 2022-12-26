@@ -9,12 +9,15 @@ import { Readable } from 'stream';
     If the video is merged with audio it will create a temporary file that will be deleted afterwards.
     If the video is not merged with audio or it's just an audio file, it will be directly sent without any temp file.
 */ 
-function sendReadable(res: any, readable: Readable, fileName: string | null = null) {
+function sendFile(res: any, readable: Readable, size: number, fileName: string | null = null) {
     if (res.destroyed) { // Deletes file and destroys stream if connection is lost
         readable.destroy();
         if (fileName) deleteFile(fileName);
         return;
     }
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Length', size);
     readable.pipe(res, { end: true }).once("close", function () {
         readable.destroy(); // make sure the stream is closed, don't close if the download aborted.
         if (fileName) deleteFile(fileName);
@@ -40,12 +43,13 @@ function sendReadable(res: any, readable: Readable, fileName: string | null = nu
         }
         const metadata = await getMetadata(queryUrl);
 
-        if (!metadata) {
-            return res.status(200).send({ status: 'failed' });
+        if (metadata.status == 'failed') {
+            console.log(2);
+            return res.status(200).send({ status: 'failed', error: metadata.error });
         };
 
         let videoResolutions: { resolution: string, hasAudio: boolean, format: string, itag: number, size: string, url: string }[] = [];
-        metadata.formats.forEach(elem => {
+        metadata.data.formats.forEach((elem: any) => {
             if (elem.qualityLabel !== null && elem.qualityLabel && elem.container && (elem.contentLength || elem.itag == 18 || elem.itag == 22)) {
                 let audio: boolean ;
                 if (elem.container != 'webm' || elem.hasAudio == true) {
@@ -67,11 +71,11 @@ function sendReadable(res: any, readable: Readable, fileName: string | null = nu
             container: any,
             videoURL: string,
         } = {
-            title: metadata.videoDetails.title,
-            author: metadata.videoDetails.author.name,
-            authorURL: metadata.videoDetails.author.channel_url,
-            duration: metadata.videoDetails.lengthSeconds,
-            thumbnail: metadata.videoDetails.thumbnails[0].url,
+            title: metadata.data.videoDetails.title,
+            author: metadata.data.videoDetails.author.name,
+            authorURL: metadata.data.videoDetails.author.channel_url,
+            duration: metadata.data.videoDetails.lengthSeconds,
+            thumbnail: metadata.data.videoDetails.thumbnails[0].url,
             container: Object.assign({}, videoResolutions),
             videoURL: queryUrl,
         };
@@ -89,17 +93,15 @@ function sendReadable(res: any, readable: Readable, fileName: string | null = nu
             return res.status(400).send({ status: 'failed' });
         }
         let videoAndAudio: videoFile;
-        let videoOnly: Readable;
-        let audio: Readable;
         if (format == 'mp3') {
-            audio = downloadAudioOnly(url);
-            sendReadable(res, audio);
+            const audio = await downloadAudioOnly(url);
+            sendFile(res, audio.stream, audio.size);
         } else if (format == 'mp4') {
             videoAndAudio = await downloadMergedVideo(url, parseInt(itag), format);
-            sendReadable(res, videoAndAudio.finalReadable, videoAndAudio.fileName);
+            sendFile(res, videoAndAudio.finalReadable, videoAndAudio.size, videoAndAudio.fileName);
         } else {
-            videoOnly = downloadVideo(url, parseInt(itag));
-            sendReadable(res, videoOnly);
+            const videoOnly = await downloadVideo(url, parseInt(itag));
+            sendFile(res, videoOnly.stream, videoOnly.size);
         }
     });
 
@@ -107,5 +109,5 @@ function sendReadable(res: any, readable: Readable, fileName: string | null = nu
         console.log(`Server has started on port: ${port}`);
     });
 
-    open("http://localhost:3000");
+    // open("http://localhost:3000");
 })();
