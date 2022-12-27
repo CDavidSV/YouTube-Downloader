@@ -44,7 +44,6 @@ function sendFile(res: any, readable: Readable, size: number, fileName: string |
         const metadata = await getMetadata(queryUrl);
 
         if (metadata.status == 'failed') {
-            console.log(2);
             return res.status(200).send({ status: 'failed', error: metadata.error });
         };
 
@@ -109,5 +108,5 @@ function sendFile(res: any, readable: Readable, size: number, fileName: string |
         console.log(`Server has started on port: ${port}`);
     });
 
-    // open("http://localhost:3000");
+    open("http://localhost:3000");
 })();

@@ -280,6 +280,7 @@ input[type="submit"]:hover {
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.5);
     pointer-events: none;
+    z-index: 9;
 }
 
 #overlay.active {
