@@ -94,7 +94,7 @@ function sendFile(res: any, readable: Readable, size: number, fileName: string |
         let videoAndAudio: videoFile;
         if (format == 'mp3') {
             const audio = await downloadAudioOnly(url);
-            sendFile(res, audio.stream, audio.size);
+            sendFile(res, audio.finalReadable, audio.size, audio.fileName);
         } else if (format == 'mp4') {
             videoAndAudio = await downloadMergedVideo(url, parseInt(itag), format);
             sendFile(res, videoAndAudio.finalReadable, videoAndAudio.size, videoAndAudio.fileName);

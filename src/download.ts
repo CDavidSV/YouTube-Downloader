@@ -4,10 +4,30 @@ import ffmpeg from 'ffmpeg-static';
 import fs from 'fs'
 import { Readable, Writable } from 'stream';
 
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+import fluent from 'fluent-ffmpeg';
+fluent.setFfmpegPath(ffmpegPath);
+
 let fileIndexes: string[] = [];
 
 type videoFile = { fileName: string | null, finalReadable: Readable, size: number };
 type formats = 'mp4' | 'webm';
+
+// Creates a temprary file to merge video and audio, which then gets sent to the user and deleted.
+function createTempFile(ext: string) {
+    let fileNum = 1;
+    let fileName = `temp${fileNum}.${ext}`;
+    while (fileIndexes.includes(fileName) || fs.existsSync(`./downloads/${fileName}`)) {
+        if(!fileIndexes.includes(fileName) && fs.existsSync(`./downloads/${fileName}`)) {
+            fileIndexes.push(fileName);
+        } 
+        fileNum++;
+        fileName = `temp${fileNum}.${ext}`;
+    }
+    fileIndexes.push(fileName);
+
+    return fileName;
+}
 
 /**
  * 
@@ -52,24 +72,6 @@ function mergeAudioAndVideo(video: Readable, audio: Readable, fileName: string) 
     ffmpegProcess.on('close', () => {
         console.log("Merging Completed!");
     });
-
-    let ffmpegLogs = ''
-
-    ffmpegProcess.stdio[2].on(
-        'data',
-        (chunk) => {
-            ffmpegLogs += chunk.toString()
-        }
-    )
-
-    ffmpegProcess.on(
-        'exit',
-        (exitCode) => {
-            if (exitCode === 1) {
-                console.error(ffmpegLogs)
-            }
-        }
-    )
 
     return ffmpegProcess;
 }
@@ -118,19 +120,8 @@ async function downloadMergedVideo(url: string, itag: number, format: formats) {
     });
     
     const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1 << 25 });
-        
-    // Creates a temprary file to merge video and audio, which then gets sent to the user and deleted.
-    let fileNum = 1;
-    let fileName = `temp${fileNum}.mp4`;
-    while (fileIndexes.includes(fileName) || fs.existsSync(`./downloads/${fileName}`)) {
-        if(!fileIndexes.includes(fileName) && fs.existsSync(`./downloads/${fileName}`)) {
-            fileIndexes.push(fileName);
-        } 
-        fileNum++;
-        fileName = `temp${fileNum}.mp4`;
-    }
-    fileIndexes.push(fileName);
-    
+
+    const fileName = createTempFile('mp4');
     await new Promise<void>((resolve) => {
         mergeAudioAndVideo(videoStream, audioStream, fileName)
         .on('close', () => {
@@ -174,28 +165,36 @@ async function downloadVideo(url: string, itag: number) {
 /**
  * 
  * @param url Video url
- * @returns Readable audio stream
+ * @returns VideoFile type with readable audio stream
  */
 async function downloadAudioOnly(url: string) {
     let downloadProgress: any;
-    let size: number = 0;
 
-    const audioStream = await new Promise<Readable>((resolve) => {
-        const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
-            size = totallength;
-            // Calculate download progress.
-            const downloadedProgress = Math.round(downloaded * 100 / totallength);
-            if (downloadProgress !== downloadedProgress) {
-                downloadProgress = downloadedProgress;
-                console.clear();
-                const completion = progressBar(downloadProgress);
-                console.log(completion);
-            }
-            resolve(audioStream);
-        })
+    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
+        // Calculate download progress.
+        const downloadedProgress = Math.round(downloaded * 100 / totallength);
+        if (downloadProgress !== downloadedProgress) {
+            downloadProgress = downloadedProgress;
+            console.clear();
+            const completion = progressBar(downloadProgress);
+            console.log(completion);
+        }
+    });;
+
+    const fileName = createTempFile('mp3');
+    const writableStream = fs.createWriteStream(`./downloads/${fileName}`);
+
+    fluent().input(audioStream).format('mp3').pipe(writableStream);
+
+    await new Promise((resolve, reject) => {
+        writableStream.on('finish', resolve);
+        writableStream.on('error', reject);
     });
 
-    return { stream: audioStream, size: size};
+    const final = fs.createReadStream(`./downloads/${fileName}`);
+    const size = writableStream.bytesWritten;
+
+    return { fileName: fileName, finalReadable: final, size: size} as videoFile;
 }
 
 function progressBar(progress: number) {
