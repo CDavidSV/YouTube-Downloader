@@ -170,7 +170,7 @@ async function downloadVideo(url: string, itag: number) {
 async function downloadAudioOnly(url: string) {
     let downloadProgress: any;
 
-    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio' }).on('progress', (length, downloaded, totallength) => {
+    const audioStream = ytdl(url, { filter: 'audioonly', quality: 'highestaudio', highWaterMark: 1 << 25 }).on('progress', (length, downloaded, totallength) => {
         // Calculate download progress.
         const downloadedProgress = Math.round(downloaded * 100 / totallength);
         if (downloadProgress !== downloadedProgress) {
